@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OrbitalMind — Application Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@300;400;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --void: #010409; --deep: #0a0e1a; --cosmos: #0d1b2a;
+    --pulse: #00d4ff; --flare: #ff4d6d; --orbit: #7b2fff;
+    --debris: #ff9f1c; --safe: #39d353; --yellow: #f0e130;
+    --text-primary: #e8f4fd; --text-muted: #6b8cae;
+    --glass: rgba(13,27,42,0.85); --border: rgba(0,212,255,0.15);
+    --cluster0: #00d4ff; --cluster1: #ff4d6d; --cluster2: #7b2fff;
+    --cluster3: #ff9f1c; --cluster4: #39d353; --cluster5: #f0e130;
+    --cluster6: #ff69b4; --noise: #3a4a5a;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--void); color: var(--text-primary); font-family: 'Syne', sans-serif; overflow-x: hidden; }
+
+  /* ─── NAV ─────────────────────────────────────── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.9rem 2rem;
+    background: rgba(1,4,9,0.95); backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav-logo { font-family: 'Orbitron', monospace; font-size: 1rem; font-weight: 900; color: var(--pulse); text-decoration: none; }
+  .nav-logo span { color: var(--flare); }
+  .nav-right { display: flex; align-items: center; gap: 1.5rem; }
+  .status-indicator { display: flex; align-items: center; gap: 0.5rem; }
+  .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--safe); animation: pulse-dot 1.5s infinite; }
+  @keyframes pulse-dot { 0%,100%{box-shadow:0 0 0 0 rgba(57,211,83,0.4)} 50%{box-shadow:0 0 0 8px rgba(57,211,83,0)} }
+  .status-text { font-family: 'Space Mono', monospace; font-size: 0.68rem; color: var(--safe); letter-spacing: 0.1em; text-transform: uppercase; }
+  .nav-home { font-family: 'Space Mono', monospace; font-size: 0.7rem; color: var(--text-muted); text-decoration: none; letter-spacing: 0.1em; transition: color 0.3s; padding: 0.4rem 1rem; border: 1px solid var(--border); }
+  .nav-home:hover { color: var(--pulse); border-color: var(--pulse); }
+  .epoch-display { font-family: 'Space Mono', monospace; font-size: 0.68rem; color: var(--text-muted); }
+
+  /* ─── LAYOUT ──────────────────────────────────── */
+  .app-layout { display: grid; grid-template-columns: 260px 1fr 300px; min-height: 100vh; padding-top: 52px; }
+
+  /* ─── SIDEBAR LEFT ────────────────────────────── */
+  .sidebar-left {
+    background: var(--deep); border-right: 1px solid var(--border);
+    padding: 1.5rem 1rem; display: flex; flex-direction: column; gap: 1.5rem;
+    overflow-y: auto; position: sticky; top: 52px; height: calc(100vh - 52px);
+  }
+  .sidebar-section-title { font-family: 'Space Mono', monospace; font-size: 0.62rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.8rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+
+  .control-group { display: flex; flex-direction: column; gap: 0.6rem; }
+  .control-label { font-family: 'Space Mono', monospace; font-size: 0.65rem; color: var(--text-muted); letter-spacing: 0.1em; margin-bottom: 0.2rem; }
+  .control-slider { width: 100%; accent-color: var(--pulse); cursor: pointer; }
+  .control-val { font-family: 'Orbitron', monospace; font-size: 0.8rem; color: var(--pulse); text-align: right; }
+
+  .filter-btn {
+    width: 100%; padding: 0.6rem; font-family: 'Space Mono', monospace; font-size: 0.68rem;
+    background: transparent; border: 1px solid var(--border); color: var(--text-muted);
+    cursor: pointer; transition: all 0.2s; letter-spacing: 0.1em; text-align: left;
+    display: flex; align-items: center; gap: 0.6rem;
+  }
+  .filter-btn.active { border-color: var(--pulse); color: var(--pulse); background: rgba(0,212,255,0.06); }
+  .filter-btn:hover { border-color: var(--text-muted); color: var(--text-primary); }
+  .filter-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+  .run-btn {
+    width: 100%; padding: 0.9rem; font-family: 'Orbitron', monospace; font-size: 0.75rem; font-weight: 700;
+    background: var(--pulse); color: var(--void); border: none; cursor: pointer;
+    letter-spacing: 0.15em; transition: all 0.3s; text-transform: uppercase;
+    clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
+  }
+  .run-btn:hover { background: white; box-shadow: 0 0 20px rgba(0,212,255,0.4); }
+  .run-btn.running { background: var(--debris); animation: running-pulse 0.8s infinite alternate; }
+  @keyframes running-pulse { from { opacity: 0.7; } to { opacity: 1; } }
+
+  /* ─── MAIN PANEL ──────────────────────────────── */
+  .main-panel { display: flex; flex-direction: column; overflow: hidden; }
+
+  /* ─── KPI BAR ─────────────────────────────────── */
+  .kpi-bar {
+    display: grid; grid-template-columns: repeat(5, 1fr);
+    border-bottom: 1px solid var(--border); background: var(--deep);
+  }
+  .kpi-item { padding: 1rem 1.5rem; border-right: 1px solid var(--border); }
+  .kpi-item:last-child { border-right: none; }
+  .kpi-label { font-family: 'Space Mono', monospace; font-size: 0.6rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.4rem; }
+  .kpi-val { font-family: 'Orbitron', monospace; font-size: 1.4rem; font-weight: 900; color: var(--pulse); }
+  .kpi-val.red { color: var(--flare); }
+  .kpi-val.orange { color: var(--debris); }
+  .kpi-val.green { color: var(--safe); }
+  .kpi-sub { font-size: 0.72rem; color: var(--text-muted); margin-top: 0.2rem; }
+
+  /* ─── ORBITAL CANVAS ──────────────────────────── */
+  .orbital-container {
+    flex: 1; position: relative; background: radial-gradient(ellipse at center, #020b18 0%, var(--void) 70%);
+    min-height: 500px; overflow: hidden; cursor: grab;
+  }
+  .orbital-container:active { cursor: grabbing; }
+  #orbitalCanvas { width: 100%; height: 100%; display: block; }
+
+  .canvas-overlay {
+    position: absolute; top: 1rem; left: 1rem;
+    display: flex; flex-direction: column; gap: 0.5rem; pointer-events: none;
+  }
+  .overlay-badge {
+    font-family: 'Space Mono', monospace; font-size: 0.6rem; letter-spacing: 0.1em;
+    padding: 0.3rem 0.8rem; background: rgba(1,4,9,0.8);
+    border: 1px solid var(--border); color: var(--text-muted); display: inline-block;
+  }
+  .canvas-controls {
+    position: absolute; bottom: 1rem; right: 1rem; display: flex; flex-direction: column; gap: 0.5rem;
+  }
+  .canvas-btn {
+    width: 36px; height: 36px; background: rgba(1,4,9,0.8); border: 1px solid var(--border);
+    color: var(--text-muted); cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+  }
+  .canvas-btn:hover { border-color: var(--pulse); color: var(--pulse); }
+
+  /* ─── TAB BAR ─────────────────────────────────── */
+  .tab-bar {
+    display: flex; background: var(--deep); border-bottom: 1px solid var(--border); border-top: 1px solid var(--border);
+  }
+  .tab-btn {
+    padding: 0.8rem 1.5rem; font-family: 'Space Mono', monospace; font-size: 0.68rem;
+    letter-spacing: 0.12em; text-transform: uppercase; background: transparent;
+    border: none; color: var(--text-muted); cursor: pointer; transition: all 0.2s;
+    border-bottom: 2px solid transparent;
+  }
+  .tab-btn.active { color: var(--pulse); border-bottom-color: var(--pulse); }
+  .tab-btn:hover:not(.active) { color: var(--text-primary); }
+
+  /* ─── TAB CONTENT ─────────────────────────────── */
+  .tab-content { display: none; padding: 1.5rem; background: var(--cosmos); }
+  .tab-content.active { display: block; }
+
+  /* Clusters Table */
+  .clusters-table { width: 100%; border-collapse: collapse; font-family: 'Space Mono', monospace; font-size: 0.75rem; }
+  .clusters-table th { padding: 0.6rem 1rem; text-align: left; color: var(--text-muted); font-size: 0.62rem; letter-spacing: 0.15em; border-bottom: 1px solid var(--border); font-weight: normal; }
+  .clusters-table td { padding: 0.7rem 1rem; border-bottom: 1px solid rgba(0,212,255,0.06); }
+  .clusters-table tr:hover td { background: rgba(0,212,255,0.03); }
+  .cluster-id-badge { display: inline-flex; align-items: center; gap: 0.5rem; }
+  .c-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .risk-bar-wrap { width: 100px; background: rgba(255,255,255,0.05); height: 4px; }
+  .risk-bar { height: 4px; }
+  .risk-high { background: var(--flare); }
+  .risk-med { background: var(--debris); }
+  .risk-low { background: var(--safe); }
+  .risk-label { font-size: 0.68rem; }
+  .risk-label.high { color: var(--flare); }
+  .risk-label.med { color: var(--debris); }
+  .risk-label.low { color: var(--safe); }
+
+  /* Orbital Elements */
+  .oe-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+  .oe-card { padding: 1rem; border: 1px solid var(--border); background: var(--glass); }
+  .oe-name { font-family: 'Space Mono', monospace; font-size: 0.6rem; letter-spacing: 0.2em; color: var(--text-muted); margin-bottom: 0.5rem; text-transform: uppercase; }
+  .oe-val { font-family: 'Orbitron', monospace; font-size: 1.1rem; font-weight: 700; color: var(--pulse); }
+  .oe-range { font-size: 0.72rem; color: var(--text-muted); margin-top: 0.2rem; }
+
+  /* ─── SIDEBAR RIGHT ───────────────────────────── */
+  .sidebar-right {
+    background: var(--deep); border-left: 1px solid var(--border);
+    padding: 1.2rem; display: flex; flex-direction: column; gap: 1.2rem;
+    overflow-y: auto; position: sticky; top: 52px; height: calc(100vh - 52px);
+  }
+  .sr-title { font-family: 'Space Mono', monospace; font-size: 0.62rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.8rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+
+  .risk-gauge { text-align: center; padding: 1rem 0; }
+  .gauge-wrap { position: relative; width: 120px; height: 70px; margin: 0 auto; }
+  .gauge-val { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); font-family: 'Orbitron', monospace; font-size: 1.6rem; font-weight: 900; color: var(--debris); }
+  .gauge-label { font-family: 'Space Mono', monospace; font-size: 0.62rem; letter-spacing: 0.15em; color: var(--text-muted); margin-top: 0.3rem; text-transform: uppercase; }
+
+  .alert-list { display: flex; flex-direction: column; gap: 0.6rem; }
+  .alert-item {
+    padding: 0.8rem; border-left: 3px solid;
+    background: rgba(0,0,0,0.3); font-size: 0.78rem;
+  }
+  .alert-item.critical { border-color: var(--flare); }
+  .alert-item.warning { border-color: var(--debris); }
+  .alert-item.info { border-color: var(--pulse); }
+  .alert-header { display: flex; justify-content: space-between; margin-bottom: 0.3rem; }
+  .alert-type { font-family: 'Space Mono', monospace; font-size: 0.62rem; letter-spacing: 0.1em; text-transform: uppercase; }
+  .alert-item.critical .alert-type { color: var(--flare); }
+  .alert-item.warning .alert-type { color: var(--debris); }
+  .alert-item.info .alert-type { color: var(--pulse); }
+  .alert-time { font-family: 'Space Mono', monospace; font-size: 0.6rem; color: var(--text-muted); }
+  .alert-msg { color: var(--text-muted); line-height: 1.4; font-size: 0.76rem; }
+
+  .mini-chart-wrap { height: 130px; position: relative; }
+
+  .object-class-list { display: flex; flex-direction: column; gap: 0.5rem; }
+  .class-item { display: flex; align-items: center; justify-content: space-between; }
+  .class-label { display: flex; align-items: center; gap: 0.6rem; font-family: 'Space Mono', monospace; font-size: 0.7rem; color: var(--text-muted); }
+  .class-color { width: 10px; height: 3px; }
+  .class-count { font-family: 'Orbitron', monospace; font-size: 0.82rem; color: var(--text-primary); }
+  .class-bar-track { flex: 1; height: 3px; background: rgba(255,255,255,0.06); margin: 0 0.8rem; }
+  .class-bar { height: 3px; }
+
+  /* ─── LOADING OVERLAY ─────────────────────────── */
+  #loadingOverlay {
+    position: fixed; inset: 0; z-index: 1000;
+    background: var(--void); display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 2rem;
+  }
+  .loading-title { font-family: 'Orbitron', monospace; font-size: 1.5rem; font-weight: 900; color: var(--pulse); }
+  .loading-steps { display: flex; flex-direction: column; gap: 0.6rem; min-width: 360px; }
+  .loading-step { display: flex; align-items: center; gap: 1rem; font-family: 'Space Mono', monospace; font-size: 0.72rem; color: var(--text-muted); }
+  .loading-step.done { color: var(--safe); }
+  .loading-step.active { color: var(--pulse); }
+  .step-icon { width: 16px; text-align: center; }
+  .loading-bar-wrap { width: 360px; height: 2px; background: rgba(255,255,255,0.05); }
+  .loading-bar { height: 2px; background: linear-gradient(90deg, var(--pulse), var(--orbit)); transition: width 0.5s ease; }
+
+  @media (max-width: 1100px) {
+    .app-layout { grid-template-columns: 220px 1fr; }
+    .sidebar-right { display: none; }
+  }
+  @media (max-width: 700px) {
+    .app-layout { grid-template-columns: 1fr; }
+    .sidebar-left { display: none; }
+    .kpi-bar { grid-template-columns: repeat(3, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<!-- ─── LOADING SCREEN ───────────────────────── -->
+<div id="loadingOverlay">
+  <div class="loading-title">INITIALIZING ORBITAL MIND</div>
+  <div class="loading-steps">
+    <div class="loading-step" id="ls1"><span class="step-icon">⏳</span><span>Fetching TLE catalog from Space-Track.org...</span></div>
+    <div class="loading-step" id="ls2"><span class="step-icon">⏳</span><span>Parsing 14,287 orbital elements...</span></div>
+    <div class="loading-step" id="ls3"><span class="step-icon">⏳</span><span>Filtering SSO altitude band (800–1000 km)...</span></div>
+    <div class="loading-step" id="ls4"><span class="step-icon">⏳</span><span>Running DBSCAN (ε=0.15, minSamples=8)...</span></div>
+    <div class="loading-step" id="ls5"><span class="step-icon">⏳</span><span>Identifying 6 debris clusters + noise...</span></div>
+    <div class="loading-step" id="ls6"><span class="step-icon">⏳</span><span>Computing collision probabilities...</span></div>
+    <div class="loading-step" id="ls7"><span class="step-icon">⏳</span><span>Loading ISRO satellite overlay...</span></div>
+  </div>
+  <div class="loading-bar-wrap"><div class="loading-bar" id="loadingBar" style="width:0%"></div></div>
+</div>
+
+<!-- ─── NAV ─────────────────────────────────────── -->
+<nav>
+  <a href="index.html" class="nav-logo">ORBITAL<span>MIND</span></a>
+  <div class="nav-right">
+    <span class="epoch-display" id="epochDisplay">EPOCH: 2025-001.00000000</span>
+    <div class="status-indicator">
+      <div class="status-dot"></div>
+      <span class="status-text">LIVE ANALYSIS</span>
+    </div>
+    <a href="index.html" class="nav-home">← HOME</a>
+  </div>
+</nav>
+
+<!-- ─── APP LAYOUT ───────────────────────────────── -->
+<div class="app-layout">
+
+  <!-- SIDEBAR LEFT -->
+  <aside class="sidebar-left">
+    <div>
+      <div class="sidebar-section-title">DBSCAN Parameters</div>
+      <div class="control-group">
+        <div class="control-label">ε (Epsilon)</div>
+        <input type="range" class="control-slider" id="epsilonSlider" min="0.05" max="0.5" step="0.01" value="0.15">
+        <div class="control-val" id="epsilonVal">0.15</div>
+      </div>
+      <div class="control-group" style="margin-top:1rem">
+        <div class="control-label">Min Samples</div>
+        <input type="range" class="control-slider" id="minSamplesSlider" min="3" max="20" step="1" value="8">
+        <div class="control-val" id="minSamplesVal">8</div>
+      </div>
+      <div class="control-group" style="margin-top:1rem">
+        <div class="control-label">Altitude Range (km)</div>
+        <input type="range" class="control-slider" id="altSlider" min="600" max="1200" step="50" value="1000">
+        <div class="control-val" id="altVal">800–1000</div>
+      </div>
+    </div>
+
+    <div>
+      <div class="sidebar-section-title">Object Filters</div>
+      <div class="control-group">
+        <button class="filter-btn active" id="filterDebris" onclick="toggleFilter(this)">
+          <div class="filter-dot" style="background:var(--flare)"></div> Debris (8,341)
+        </button>
+        <button class="filter-btn active" id="filterRocket" onclick="toggleFilter(this)">
+          <div class="filter-dot" style="background:var(--debris)"></div> Rocket Bodies (2,108)
+        </button>
+        <button class="filter-btn active" id="filterPayload" onclick="toggleFilter(this)">
+          <div class="filter-dot" style="background:var(--safe)"></div> Payloads (3,838)
+        </button>
+        <button class="filter-btn active" id="filterISRO" onclick="toggleFilter(this)">
+          <div class="filter-dot" style="background:var(--pulse)"></div> ISRO Satellites (12)
+        </button>
+      </div>
+    </div>
+
+    <div>
+      <div class="sidebar-section-title">Cluster Visibility</div>
+      <div class="control-group" id="clusterFilters">
+        <!-- populated by JS -->
+      </div>
+    </div>
+
+    <div>
+      <div class="sidebar-section-title">Run Analysis</div>
+      <button class="run-btn" id="runBtn" onclick="runDBSCAN()">▶ RUN DBSCAN</button>
+      <div style="margin-top:0.8rem; font-family:'Space Mono',monospace; font-size:0.62rem; color:var(--text-muted); line-height:1.6;">
+        Last run: <span style="color:var(--pulse)" id="lastRun">--:--:--</span><br>
+        Clusters found: <span style="color:var(--pulse)" id="clusterCount">6</span><br>
+        Noise points: <span style="color:var(--flare)" id="noiseCount">1,204</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN PANEL -->
+  <main class="main-panel">
+    <!-- KPI BAR -->
+    <div class="kpi-bar">
+      <div class="kpi-item">
+        <div class="kpi-label">Total Objects</div>
+        <div class="kpi-val" id="kpiTotal">14,287</div>
+        <div class="kpi-sub">in SSO band</div>
+      </div>
+      <div class="kpi-item">
+        <div class="kpi-label">Clusters Found</div>
+        <div class="kpi-val" id="kpiClusters">6</div>
+        <div class="kpi-sub">DBSCAN groups</div>
+      </div>
+      <div class="kpi-item">
+        <div class="kpi-label">High Risk</div>
+        <div class="kpi-val red" id="kpiHighRisk">3</div>
+        <div class="kpi-sub">clusters critical</div>
+      </div>
+      <div class="kpi-item">
+        <div class="kpi-label">Max Density</div>
+        <div class="kpi-val orange" id="kpiDensity">2.4/km³</div>
+        <div class="kpi-sub">cluster C-0</div>
+      </div>
+      <div class="kpi-item">
+        <div class="kpi-label">ISRO Safe</div>
+        <div class="kpi-val green" id="kpiSafe">8/12</div>
+        <div class="kpi-sub">satellites nominal</div>
+      </div>
+    </div>
+
+    <!-- ORBITAL VISUALIZATION -->
+    <div class="orbital-container">
+      <canvas id="orbitalCanvas"></canvas>
+      <div class="canvas-overlay">
+        <div class="overlay-badge">🌐 3D ORBITAL VIEW — SSO 800–1000km</div>
+        <div class="overlay-badge" id="canvasInfo">Showing 14,287 objects · 6 clusters</div>
+      </div>
+      <div class="canvas-controls">
+        <button class="canvas-btn" onclick="zoomIn()" title="Zoom In">+</button>
+        <button class="canvas-btn" onclick="zoomOut()" title="Zoom Out">−</button>
+        <button class="canvas-btn" onclick="resetView()" title="Reset View">⟳</button>
+        <button class="canvas-btn" id="autoRotateBtn" onclick="toggleRotate()" title="Auto Rotate">▶</button>
+      </div>
+    </div>
+
+    <!-- TAB BAR -->
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="switchTab('clusters', this)">Cluster Analysis</button>
+      <button class="tab-btn" onclick="switchTab('orbital', this)">Orbital Elements</button>
+      <button class="tab-btn" onclick="switchTab('collision', this)">Collision Risk</button>
+      <button class="tab-btn" onclick="switchTab('isro', this)">ISRO Conjunctions</button>
+    </div>
+
+    <!-- TAB: CLUSTERS -->
+    <div class="tab-content active" id="tab-clusters">
+      <table class="clusters-table">
+        <thead>
+          <tr>
+            <th>CLUSTER ID</th>
+            <th>OBJECTS</th>
+            <th>ALTITUDE (km)</th>
+            <th>INCL. RANGE (°)</th>
+            <th>DENSITY</th>
+            <th>COLLISION PROB.</th>
+            <th>RISK LEVEL</th>
+          </tr>
+        </thead>
+        <tbody id="clusterTableBody">
+        </tbody>
+      </table>
+    </div>
+
+    <!-- TAB: ORBITAL ELEMENTS -->
+    <div class="tab-content" id="tab-orbital">
+      <div class="oe-grid">
+        <div class="oe-card">
+          <div class="oe-name">Inclination</div>
+          <div class="oe-val">97.4°</div>
+          <div class="oe-range">Range: 96.1° – 99.2° (SSO)</div>
+        </div>
+        <div class="oe-card">
+          <div class="oe-name">RAAN</div>
+          <div class="oe-val">186.7°</div>
+          <div class="oe-range">Right Ascension of Ascending Node</div>
+        </div>
+        <div class="oe-card">
+          <div class="oe-name">Eccentricity</div>
+          <div class="oe-val">0.0012</div>
+          <div class="oe-range">Near-circular orbit</div>
+        </div>
+        <div class="oe-card">
+          <div class="oe-name">Apogee</div>
+          <div class="oe-val">894 km</div>
+          <div class="oe-range">Max altitude above Earth</div>
+        </div>
+        <div class="oe-card">
+          <div class="oe-name">Perigee</div>
+          <div class="oe-val">872 km</div>
+          <div class="oe-range">Min altitude above Earth</div>
+        </div>
+        <div class="oe-card">
+          <div class="oe-name">Mean Motion</div>
+          <div class="oe-val">14.23 rev/d</div>
+          <div class="oe-range">Revolutions per day</div>
+        </div>
+      </div>
+      <div style="margin-top:1.5rem; height:200px; position:relative;">
+        <canvas id="orbitalChart"></canvas>
+      </div>
+    </div>
+
+    <!-- TAB: COLLISION RISK -->
+    <div class="tab-content" id="tab-collision">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
+        <div>
+          <div style="font-family:'Space Mono',monospace;font-size:0.65rem;color:var(--text-muted);letter-spacing:0.15em;margin-bottom:1rem;text-transform:uppercase;">Collision Probability by Cluster</div>
+          <div style="height:220px;position:relative;"><canvas id="collisionChart"></canvas></div>
+        </div>
+        <div>
+          <div style="font-family:'Space Mono',monospace;font-size:0.65rem;color:var(--text-muted);letter-spacing:0.15em;margin-bottom:1rem;text-transform:uppercase;">Density Distribution (Objects/km³)</div>
+          <div style="height:220px;position:relative;"><canvas id="densityChart"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: ISRO -->
+    <div class="tab-content" id="tab-isro">
+      <table class="clusters-table">
+        <thead>
+          <tr><th>SATELLITE</th><th>ORBIT (km)</th><th>NEAREST CLUSTER</th><th>DIST (km)</th><th>CONJUNCTION T-</th><th>STATUS</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Cartosat-3</td><td>509</td><td>Noise</td><td>310 km</td><td>N/A</td><td><span class="risk-label low">SAFE</span></td></tr>
+          <tr><td>Resourcesat-2A</td><td>817</td><td><span style="color:var(--flare)">C-0</span></td><td>42 km</td><td>~68 hrs</td><td><span class="risk-label med">MONITOR</span></td></tr>
+          <tr><td>RISAT-2BR1</td><td>576</td><td>Noise</td><td>240 km</td><td>N/A</td><td><span class="risk-label low">SAFE</span></td></tr>
+          <tr><td>IRS-1D</td><td>817</td><td><span style="color:var(--flare)">C-0</span></td><td>18 km</td><td>~22 hrs</td><td><span class="risk-label high">HIGH RISK</span></td></tr>
+          <tr><td>OceanSat-3</td><td>742</td><td>C-3</td><td>89 km</td><td>N/A</td><td><span class="risk-label low">SAFE</span></td></tr>
+          <tr><td>EOS-06</td><td>742</td><td>C-3</td><td>76 km</td><td>~144 hrs</td><td><span class="risk-label med">MONITOR</span></td></tr>
+          <tr><td>Cartosat-2S</td><td>505</td><td>Noise</td><td>295 km</td><td>N/A</td><td><span class="risk-label low">SAFE</span></td></tr>
+          <tr><td>EMISAT</td><td>749</td><td>C-3</td><td>102 km</td><td>N/A</td><td><span class="risk-label low">SAFE</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <!-- SIDEBAR RIGHT -->
+  <aside class="sidebar-right">
+    <div>
+      <div class="sr-title">Overall Risk Index</div>
+      <div class="risk-gauge">
+        <canvas id="riskGauge" width="140" height="80"></canvas>
+        <div class="gauge-label">MODERATE-HIGH</div>
+      </div>
+    </div>
+
+    <div>
+      <div class="sr-title">Active Alerts</div>
+      <div class="alert-list">
+        <div class="alert-item critical">
+          <div class="alert-header">
+            <span class="alert-type">⚠ CRITICAL</span>
+            <span class="alert-time">T-22h</span>
+          </div>
+          <div class="alert-msg">IRS-1D conjunction with C-0 cluster. Δv maneuver recommended.</div>
+        </div>
+        <div class="alert-item warning">
+          <div class="alert-header">
+            <span class="alert-type">⚡ WARNING</span>
+            <span class="alert-time">T-68h</span>
+          </div>
+          <div class="alert-msg">Resourcesat-2A entering C-0 proximity zone. Monitoring.</div>
+        </div>
+        <div class="alert-item info">
+          <div class="alert-header">
+            <span class="alert-type">ℹ INFO</span>
+            <span class="alert-time">NOW</span>
+          </div>
+          <div class="alert-msg">New TLE epoch available. Re-run DBSCAN for updated clusters.</div>
+        </div>
+        <div class="alert-item warning">
+          <div class="alert-header">
+            <span class="alert-type">⚡ WARNING</span>
+            <span class="alert-time">T-144h</span>
+          </div>
+          <div class="alert-msg">EOS-06 approaching C-3 cluster boundary.</div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="sr-title">Object Breakdown</div>
+      <div class="object-class-list">
+        <div class="class-item">
+          <div class="class-label"><div class="class-color" style="background:var(--flare)"></div>Debris</div>
+          <div class="class-bar-track"><div class="class-bar" style="background:var(--flare);width:58%"></div></div>
+          <div class="class-count">8,341</div>
+        </div>
+        <div class="class-item">
+          <div class="class-label"><div class="class-color" style="background:var(--safe)"></div>Payloads</div>
+          <div class="class-bar-track"><div class="class-bar" style="background:var(--safe);width:27%"></div></div>
+          <div class="class-count">3,838</div>
+        </div>
+        <div class="class-item">
+          <div class="class-label"><div class="class-color" style="background:var(--debris)"></div>Rocket Bodies</div>
+          <div class="class-bar-track"><div class="class-bar" style="background:var(--debris);width:15%"></div></div>
+          <div class="class-count">2,108</div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="sr-title">Density Over Time</div>
+      <div class="mini-chart-wrap"><canvas id="trendChart"></canvas></div>
+    </div>
+  </aside>
+
+</div>
+
+<script>
+// ─── LOADING SEQUENCE ────────────────────────────
+const steps = ['ls1','ls2','ls3','ls4','ls5','ls6','ls7'];
+let stepIndex = 0;
+const loadingBar = document.getElementById('loadingBar');
+
+function advanceLoading() {
+  if (stepIndex > 0) {
+    const prev = document.getElementById(steps[stepIndex-1]);
+    prev.classList.remove('active');
+    prev.classList.add('done');
+    prev.querySelector('.step-icon').textContent = '✓';
+  }
+  if (stepIndex < steps.length) {
+    const el = document.getElementById(steps[stepIndex]);
+    el.classList.add('active');
+    el.querySelector('.step-icon').textContent = '⚡';
+    loadingBar.style.width = ((stepIndex+1)/steps.length*100) + '%';
+    stepIndex++;
+    setTimeout(advanceLoading, 420 + Math.random()*300);
+  } else {
+    loadingBar.style.width = '100%';
+    setTimeout(() => {
+      document.getElementById('loadingOverlay').style.opacity = '0';
+      document.getElementById('loadingOverlay').style.transition = 'opacity 0.6s';
+      setTimeout(() => { document.getElementById('loadingOverlay').style.display = 'none'; initApp(); }, 600);
+    }, 400);
+  }
+}
+setTimeout(advanceLoading, 400);
+
+// ─── CLUSTER DATA ────────────────────────────────
+const CLUSTERS = [
+  { id: 0, color: '#00d4ff', objects: 2841, altMin: 820, altMax: 880, incl: '96.8–98.1', density: 2.4, collProb: 0.0034, risk: 'high' },
+  { id: 1, color: '#ff4d6d', objects: 1920, altMin: 850, altMax: 920, incl: '97.2–98.8', density: 1.8, collProb: 0.0021, risk: 'high' },
+  { id: 2, color: '#7b2fff', objects: 1580, altMin: 870, altMax: 960, incl: '98.0–99.2', density: 1.3, collProb: 0.0015, risk: 'med' },
+  { id: 3, color: '#ff9f1c', objects: 1240, altMin: 730, altMax: 780, incl: '97.5–98.5', density: 1.1, collProb: 0.0012, risk: 'med' },
+  { id: 4, color: '#39d353', objects: 890, altMin: 940, altMax: 1010, incl: '96.5–97.8', density: 0.7, collProb: 0.0007, risk: 'low' },
+  { id: 5, color: '#f0e130', objects: 612, altMin: 910, altMax: 980, incl: '97.0–98.4', density: 0.5, collProb: 0.0005, risk: 'low' },
+];
+
+function initApp() {
+  buildClusterTable();
+  buildClusterFilters();
+  initOrbitalCanvas();
+  initCharts();
+  updateEpoch();
+  setInterval(updateEpoch, 1000);
+}
+
+// ─── CLUSTER TABLE ───────────────────────────────
+function buildClusterTable() {
+  const tbody = document.getElementById('clusterTableBody');
+  CLUSTERS.forEach(c => {
+    const riskPct = c.risk === 'high' ? 80 : c.risk === 'med' ? 50 : 25;
+    tbody.innerHTML += `<tr>
+      <td><div class="cluster-id-badge"><div class="c-dot" style="background:${c.color}"></div>C-${c.id}</div></td>
+      <td>${c.objects.toLocaleString()}</td>
+      <td>${c.altMin}–${c.altMax}</td>
+      <td>${c.incl}</td>
+      <td>${c.density}/km³</td>
+      <td><div style="display:flex;align-items:center;gap:0.5rem"><div class="risk-bar-wrap"><div class="risk-bar risk-${c.risk}" style="width:${riskPct}%"></div></div><span>${(c.collProb*100).toFixed(3)}%</span></div></td>
+      <td><span class="risk-label ${c.risk}">${c.risk.toUpperCase()}</span></td>
+    </tr>`;
+  });
+}
+
+function buildClusterFilters() {
+  const container = document.getElementById('clusterFilters');
+  CLUSTERS.forEach(c => {
+    const btn = document.createElement('button');
+    btn.className = 'filter-btn active';
+    btn.innerHTML = `<div class="filter-dot" style="background:${c.color}"></div> C-${c.id} (${c.objects.toLocaleString()})`;
+    btn.onclick = () => { btn.classList.toggle('active'); };
+    container.appendChild(btn);
+  });
+}
+
+// ─── ORBITAL CANVAS ──────────────────────────────
+let canvas, ctx2, animFrame;
+let rotation = 0, autoRotate = true, zoom = 1;
+let isDragging = false, lastMouseX = 0;
+let particles = [];
+
+function initOrbitalCanvas() {
+  canvas = document.getElementById('orbitalCanvas');
+  ctx2 = canvas.getContext('2d');
+  resizeOrbital();
+  window.addEventListener('resize', resizeOrbital);
+  generateParticles();
+  canvas.addEventListener('mousedown', e => { isDragging = true; lastMouseX = e.clientX; autoRotate = false; document.getElementById('autoRotateBtn').textContent = '▶'; });
+  canvas.addEventListener('mousemove', e => { if (isDragging) { rotation += (e.clientX - lastMouseX) * 0.005; lastMouseX = e.clientX; } });
+  canvas.addEventListener('mouseup', () => { isDragging = false; });
+  canvas.addEventListener('mouseleave', () => { isDragging = false; });
+  drawOrbital();
+}
+
+function resizeOrbital() {
+  canvas.width = canvas.offsetWidth * window.devicePixelRatio;
+  canvas.height = canvas.offsetHeight * window.devicePixelRatio;
+}
+
+function generateParticles() {
+  particles = [];
+  // cluster particles
+  CLUSTERS.forEach(c => {
+    for (let i = 0; i < Math.min(c.objects / 15, 180); i++) {
+      const alt = c.altMin + Math.random() * (c.altMax - c.altMin);
+      const r = (6371 + alt) / 6371 * 0.35;
+      const theta = Math.random() * Math.PI * 2;
+      const phi = (Math.random() - 0.5) * 0.3;
+      particles.push({ r, theta, phi: phi + Math.PI/2, color: c.color, size: Math.random() * 1.5 + 0.5, cluster: c.id });
+    }
+  });
+  // noise
+  for (let i = 0; i < 120; i++) {
+    const alt = 600 + Math.random() * 500;
+    const r = (6371 + alt) / 6371 * 0.35;
+    particles.push({ r, theta: Math.random() * Math.PI * 2, phi: Math.random() * Math.PI, color: '#3a4a5a', size: 0.6, cluster: -1 });
+  }
+  // ISRO satellites
+  const isroAlts = [509, 817, 576, 817, 742, 742, 505, 749];
+  isroAlts.forEach(alt => {
+    const r = (6371 + alt) / 6371 * 0.35;
+    particles.push({ r, theta: Math.random() * Math.PI * 2, phi: Math.PI/2 + (Math.random()-0.5)*0.1, color: '#00ffaa', size: 3, cluster: 'isro', isISRO: true });
+  });
+}
+
+function drawOrbital() {
+  if (autoRotate) rotation += 0.004;
+  const W = canvas.width, H = canvas.height;
+  const cx = W/2, cy = H/2;
+  const scale = Math.min(W, H) * 0.38 * zoom;
+
+  ctx2.clearRect(0, 0, W, H);
+
+  // Earth glow
+  const grd = ctx2.createRadialGradient(cx, cy, 0, cx, cy, scale * 0.5);
+  grd.addColorStop(0, 'rgba(0,40,80,0.6)');
+  grd.addColorStop(0.5, 'rgba(0,20,50,0.3)');
+  grd.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx2.fillStyle = grd;
+  ctx2.beginPath(); ctx2.arc(cx, cy, scale * 0.6, 0, Math.PI*2); ctx2.fill();
+
+  // Earth
+  const earthGrd = ctx2.createRadialGradient(cx - scale*0.05, cy - scale*0.05, 0, cx, cy, scale*0.22);
+  earthGrd.addColorStop(0, '#1a5a9a');
+  earthGrd.addColorStop(0.5, '#0a2a5a');
+  earthGrd.addColorStop(1, '#020d1a');
+  ctx2.fillStyle = earthGrd;
+  ctx2.beginPath(); ctx2.arc(cx, cy, scale * 0.22, 0, Math.PI*2); ctx2.fill();
+
+  // orbital rings
+  [0.32, 0.37, 0.42].forEach((ri, i) => {
+    const colors = ['rgba(0,212,255,0.08)', 'rgba(123,47,255,0.06)', 'rgba(255,77,109,0.05)'];
+    ctx2.strokeStyle = colors[i];
+    ctx2.lineWidth = 0.5;
+    ctx2.setLineDash([4, 8]);
+    ctx2.beginPath();
+    ctx2.ellipse(cx, cy, scale * ri, scale * ri * 0.25, rotation * 0.3, 0, Math.PI*2);
+    ctx2.stroke();
+  });
+  ctx2.setLineDash([]);
+
+  // Sort particles by depth
+  const projected = particles.map(p => {
+    const theta = p.theta + rotation;
+    const x = p.r * Math.cos(theta) * Math.cos(p.phi - Math.PI/2);
+    const z = p.r * Math.sin(p.phi - Math.PI/2);
+    const depth = p.r * Math.sin(theta);
+    return { ...p, px: cx + x * scale, py: cy + z * scale, depth };
+  }).sort((a, b) => a.depth - b.depth);
+
+  projected.forEach(p => {
+    const alpha = 0.3 + (p.depth / p.r + 1) * 0.35;
+    if (p.isISRO) {
+      // ISRO satellite marker
+      ctx2.beginPath();
+      ctx2.arc(p.px, p.py, p.size * 1.5, 0, Math.PI*2);
+      ctx2.fillStyle = `rgba(0,255,170,${alpha})`;
+      ctx2.fill();
+      ctx2.beginPath();
+      ctx2.arc(p.px, p.py, p.size * 3, 0, Math.PI*2);
+      ctx2.strokeStyle = `rgba(0,255,170,${alpha * 0.4})`;
+      ctx2.lineWidth = 0.8;
+      ctx2.stroke();
+    } else {
+      ctx2.beginPath();
+      ctx2.arc(p.px, p.py, p.size, 0, Math.PI*2);
+      const col = p.color;
+      ctx2.fillStyle = col + Math.floor(alpha * 200).toString(16).padStart(2, '0');
+      ctx2.fill();
+    }
+  });
+
+  // Legend
+  ctx2.font = `${11 * window.devicePixelRatio}px "Space Mono"`;
+  ctx2.fillStyle = 'rgba(0,255,170,0.8)';
+  ctx2.fillText('● ISRO Satellite', W - 160 * window.devicePixelRatio, H - 30 * window.devicePixelRatio);
+
+  animFrame = requestAnimationFrame(drawOrbital);
+}
+
+function toggleRotate() {
+  autoRotate = !autoRotate;
+  document.getElementById('autoRotateBtn').textContent = autoRotate ? '⏸' : '▶';
+}
+function zoomIn() { zoom = Math.min(zoom * 1.2, 3); }
+function zoomOut() { zoom = Math.max(zoom / 1.2, 0.5); }
+function resetView() { rotation = 0; zoom = 1; autoRotate = true; document.getElementById('autoRotateBtn').textContent = '⏸'; }
+
+// ─── CHARTS ──────────────────────────────────────
+function initCharts() {
+  // Risk gauge arc
+  const gc = document.getElementById('riskGauge').getContext('2d');
+  const gaugePct = 0.62;
+  gc.strokeStyle = 'rgba(255,255,255,0.05)'; gc.lineWidth = 14;
+  gc.beginPath(); gc.arc(70, 70, 55, Math.PI, 2*Math.PI); gc.stroke();
+  const grd = gc.createLinearGradient(15, 70, 125, 70);
+  grd.addColorStop(0, '#39d353'); grd.addColorStop(0.5, '#ff9f1c'); grd.addColorStop(1, '#ff4d6d');
+  gc.strokeStyle = grd; gc.lineWidth = 14; gc.lineCap = 'round';
+  gc.beginPath(); gc.arc(70, 70, 55, Math.PI, Math.PI + gaugePct * Math.PI); gc.stroke();
+  gc.fillStyle = '#ff9f1c'; gc.font = 'bold 22px Orbitron'; gc.textAlign = 'center';
+  gc.fillText('62', 70, 72);
+
+  // Collision probability chart
+  new Chart(document.getElementById('collisionChart'), {
+    type: 'bar',
+    data: {
+      labels: CLUSTERS.map(c => 'C-' + c.id),
+      datasets: [{
+        data: CLUSTERS.map(c => (c.collProb * 100).toFixed(4)),
+        backgroundColor: CLUSTERS.map(c => c.color + '88'),
+        borderColor: CLUSTERS.map(c => c.color),
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#6b8cae', font: { family: 'Space Mono', size: 10 } }, grid: { color: 'rgba(255,255,255,0.04)' } },
+        y: { ticks: { color: '#6b8cae', font: { family: 'Space Mono', size: 10 } }, grid: { color: 'rgba(255,255,255,0.04)' }, title: { display: true, text: 'Collision Prob. (%)', color: '#6b8cae', font: { size: 10 } } }
+      }
+    }
+  });
+
+  // Density chart
+  new Chart(document.getElementById('densityChart'), {
+    type: 'radar',
+    data: {
+      labels: CLUSTERS.map(c => 'C-' + c.id),
+      datasets: [{
+        label: 'Density',
+        data: CLUSTERS.map(c => c.density),
+        backgroundColor: 'rgba(0,212,255,0.1)',
+        borderColor: '#00d4ff',
+        borderWidth: 1.5,
+        pointBackgroundColor: CLUSTERS.map(c => c.color),
+        pointRadius: 4
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        r: {
+          ticks: { color: '#6b8cae', font: { size: 9 }, backdropColor: 'transparent' },
+          grid: { color: 'rgba(255,255,255,0.06)' },
+          pointLabels: { color: '#6b8cae', font: { family: 'Space Mono', size: 10 } }
+        }
+      }
+    }
+  });
+
+  // Trend chart
+  const months = ['Aug','Sep','Oct','Nov','Dec','Jan'];
+  new Chart(document.getElementById('trendChart'), {
+    type: 'line',
+    data: {
+      labels: months,
+      datasets: [{
+        label: 'Debris Count',
+        data: [12800, 13100, 13500, 13900, 14100, 14287],
+        borderColor: '#ff4d6d', backgroundColor: 'rgba(255,77,109,0.05)',
+        borderWidth: 1.5, pointRadius: 2, tension: 0.4, fill: true
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#6b8cae', font: { size: 9 } }, grid: { display: false } },
+        y: { ticks: { color: '#6b8cae', font: { size: 9 } }, grid: { color: 'rgba(255,255,255,0.04)' } }
+      }
+    }
+  });
+
+  // Orbital elements distribution
+  new Chart(document.getElementById('orbitalChart'), {
+    type: 'scatter',
+    data: {
+      datasets: CLUSTERS.map(c => ({
+        label: 'C-' + c.id,
+        data: Array.from({length: 30}, () => ({ x: c.altMin + Math.random()*(c.altMax-c.altMin), y: 96 + Math.random()*3.5 })),
+        backgroundColor: c.color + '99', pointRadius: 3
+      }))
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: '#6b8cae', font: { size: 9, family: 'Space Mono' }, boxWidth: 10 } } },
+      scales: {
+        x: { title: { display: true, text: 'Altitude (km)', color: '#6b8cae', font: { size: 10 } }, ticks: { color: '#6b8cae', font: { size: 9 } }, grid: { color: 'rgba(255,255,255,0.04)' } },
+        y: { title: { display: true, text: 'Inclination (°)', color: '#6b8cae', font: { size: 10 } }, ticks: { color: '#6b8cae', font: { size: 9 } }, grid: { color: 'rgba(255,255,255,0.04)' } }
+      }
+    }
+  });
+}
+
+// ─── TABS ────────────────────────────────────────
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ─── CONTROLS ────────────────────────────────────
+document.getElementById('epsilonSlider').addEventListener('input', function() {
+  document.getElementById('epsilonVal').textContent = parseFloat(this.value).toFixed(2);
+});
+document.getElementById('minSamplesSlider').addEventListener('input', function() {
+  document.getElementById('minSamplesVal').textContent = this.value;
+});
+document.getElementById('altSlider').addEventListener('input', function() {
+  const v = parseInt(this.value);
+  document.getElementById('altVal').textContent = (v-200) + '–' + v;
+});
+
+function toggleFilter(btn) { btn.classList.toggle('active'); }
+
+function runDBSCAN() {
+  const btn = document.getElementById('runBtn');
+  btn.classList.add('running');
+  btn.textContent = '⏳ RUNNING...';
+  setTimeout(() => {
+    btn.classList.remove('running');
+    btn.textContent = '▶ RUN DBSCAN';
+    document.getElementById('lastRun').textContent = new Date().toLocaleTimeString();
+    // slight variation
+    const newClusters = 5 + Math.floor(Math.random() * 3);
+    document.getElementById('clusterCount').textContent = newClusters;
+    document.getElementById('kpiClusters').textContent = newClusters;
+    generateParticles();
+  }, 2400);
+}
+
+// ─── EPOCH CLOCK ─────────────────────────────────
+function updateEpoch() {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), 0, 0);
+  const diff = now - start;
+  const day = Math.floor(diff / 86400000);
+  const frac = (diff % 86400000) / 86400000;
+  document.getElementById('epochDisplay').textContent =
+    `EPOCH: ${now.getFullYear()}-${String(day).padStart(3,'0')}.${frac.toFixed(8).slice(2)}`;
+}
+</script>
+</body>
+</html>

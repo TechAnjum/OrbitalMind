@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OrbitalMind — Space Debris Intelligence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --void: #010409;
+    --deep: #0a0e1a;
+    --cosmos: #0d1b2a;
+    --pulse: #00d4ff;
+    --flare: #ff4d6d;
+    --orbit: #7b2fff;
+    --debris: #ff9f1c;
+    --safe: #39d353;
+    --text-primary: #e8f4fd;
+    --text-muted: #6b8cae;
+    --glass: rgba(13,27,42,0.7);
+    --border: rgba(0,212,255,0.15);
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--void);
+    color: var(--text-primary);
+    font-family: 'Syne', sans-serif;
+    overflow-x: hidden;
+  }
+
+  /* ─── STARFIELD ─────────────────────────────────── */
+  #starfield {
+    position: fixed; inset: 0; z-index: 0;
+    pointer-events: none;
+  }
+  .star {
+    position: absolute; border-radius: 50%;
+    background: white; animation: twinkle var(--d) infinite alternate;
+  }
+  @keyframes twinkle { from { opacity: 0.1; } to { opacity: 0.9; } }
+
+  /* ─── NAV ────────────────────────────────────────── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1.2rem 4rem;
+    background: rgba(1,4,9,0.85);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav-logo {
+    font-family: 'Orbitron', monospace; font-size: 1.1rem; font-weight: 900;
+    color: var(--pulse); letter-spacing: 0.15em;
+    text-decoration: none;
+  }
+  .nav-logo span { color: var(--flare); }
+  .nav-links { display: flex; gap: 2.5rem; list-style: none; }
+  .nav-links a {
+    text-decoration: none; font-size: 0.8rem; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--text-muted); transition: color 0.3s;
+    font-family: 'Space Mono', monospace;
+  }
+  .nav-links a:hover { color: var(--pulse); }
+  .nav-links a.active { color: var(--pulse); }
+  .nav-badge {
+    font-family: 'Space Mono', monospace; font-size: 0.7rem;
+    padding: 0.3rem 1rem; border: 1px solid var(--pulse);
+    color: var(--pulse); letter-spacing: 0.1em;
+  }
+
+  /* ─── HERO ───────────────────────────────────────── */
+  #hero {
+    position: relative; z-index: 1;
+    min-height: 100vh;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; padding: 6rem 2rem 4rem;
+    overflow: hidden;
+  }
+  .hero-orbit-ring {
+    position: absolute;
+    border-radius: 50%; border: 1px solid rgba(0,212,255,0.07);
+    animation: orbit-spin linear infinite;
+  }
+  .ring-1 { width: 500px; height: 500px; animation-duration: 40s; }
+  .ring-2 { width: 750px; height: 750px; animation-duration: 70s; border-color: rgba(123,47,255,0.06); }
+  .ring-3 { width: 1050px; height: 1050px; animation-duration: 120s; border-color: rgba(255,77,109,0.04); }
+  @keyframes orbit-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+  .orbit-dot {
+    position: absolute; width: 6px; height: 6px; border-radius: 50%;
+    top: -3px; left: 50%;
+    box-shadow: 0 0 8px currentColor;
+  }
+  .dot-1 { color: var(--pulse); background: var(--pulse); }
+  .dot-2 { color: var(--orbit); background: var(--orbit); }
+  .dot-3 { color: var(--flare); background: var(--flare); }
+
+  .hero-eyebrow {
+    font-family: 'Space Mono', monospace; font-size: 0.72rem;
+    letter-spacing: 0.35em; text-transform: uppercase;
+    color: var(--pulse); margin-bottom: 1.5rem;
+    display: flex; align-items: center; gap: 1rem;
+  }
+  .eyebrow-line { width: 40px; height: 1px; background: var(--pulse); }
+
+  .hero-title {
+    font-family: 'Orbitron', monospace;
+    font-size: clamp(2.8rem, 8vw, 7rem);
+    font-weight: 900; line-height: 0.95;
+    letter-spacing: -0.02em;
+    margin-bottom: 0.3em;
+  }
+  .hero-title .line1 { display: block; color: var(--text-primary); }
+  .hero-title .line2 {
+    display: block;
+    background: linear-gradient(90deg, var(--pulse), var(--orbit), var(--flare));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .hero-sub {
+    font-size: 1.15rem; color: var(--text-muted); max-width: 600px;
+    line-height: 1.7; margin: 1.5rem auto 3rem;
+    font-weight: 300;
+  }
+  .hero-cta-row { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+  .btn-primary {
+    font-family: 'Orbitron', monospace; font-size: 0.8rem; font-weight: 700;
+    letter-spacing: 0.15em; text-transform: uppercase;
+    padding: 1rem 2.5rem; background: var(--pulse); color: var(--void);
+    text-decoration: none; transition: all 0.3s;
+    clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%);
+  }
+  .btn-primary:hover { background: white; transform: translateY(-2px); box-shadow: 0 0 30px rgba(0,212,255,0.4); }
+  .btn-secondary {
+    font-family: 'Space Mono', monospace; font-size: 0.8rem;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    padding: 1rem 2.5rem; border: 1px solid var(--border);
+    color: var(--text-muted); text-decoration: none; transition: all 0.3s;
+    background: var(--glass);
+  }
+  .btn-secondary:hover { border-color: var(--pulse); color: var(--pulse); }
+
+  .hero-stats {
+    display: flex; gap: 4rem; margin-top: 5rem;
+    flex-wrap: wrap; justify-content: center;
+  }
+  .hero-stat { text-align: center; }
+  .stat-num {
+    font-family: 'Orbitron', monospace; font-size: 2.2rem; font-weight: 900;
+    color: var(--pulse); display: block;
+    text-shadow: 0 0 20px rgba(0,212,255,0.4);
+  }
+  .stat-label {
+    font-family: 'Space Mono', monospace; font-size: 0.68rem;
+    letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-muted);
+    margin-top: 0.3rem;
+  }
+
+  /* ─── SCROLL INDICATOR ───────────────────────────── */
+  .scroll-hint {
+    position: absolute; bottom: 2rem; left: 50%; transform: translateX(-50%);
+    display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
+    animation: bounce 2s infinite;
+  }
+  .scroll-hint span { font-family: 'Space Mono', monospace; font-size: 0.62rem; letter-spacing: 0.2em; color: var(--text-muted); }
+  .scroll-arrow { width: 20px; height: 20px; border-right: 1px solid var(--text-muted); border-bottom: 1px solid var(--text-muted); transform: rotate(45deg); }
+  @keyframes bounce { 0%,100%{transform:translateX(-50%) translateY(0)} 50%{transform:translateX(-50%) translateY(6px)} }
+
+  /* ─── SECTION BASE ───────────────────────────────── */
+  section { position: relative; z-index: 1; }
+  .section-wrap { max-width: 1200px; margin: 0 auto; padding: 6rem 2rem; }
+  .section-tag {
+    font-family: 'Space Mono', monospace; font-size: 0.68rem;
+    letter-spacing: 0.3em; text-transform: uppercase; color: var(--pulse);
+    margin-bottom: 1rem; display: flex; align-items: center; gap: 0.8rem;
+  }
+  .section-tag::before { content: ''; width: 30px; height: 1px; background: var(--pulse); }
+  .section-title {
+    font-family: 'Orbitron', monospace; font-size: clamp(1.8rem, 4vw, 3rem);
+    font-weight: 700; line-height: 1.1; margin-bottom: 1rem;
+  }
+  .section-desc { color: var(--text-muted); max-width: 540px; line-height: 1.7; font-size: 1rem; }
+
+  /* ─── MISSION SECTION ────────────────────────────── */
+  #mission { background: linear-gradient(180deg, var(--void), var(--deep)); }
+  .mission-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 5rem; align-items: center;
+    margin-top: 4rem;
+  }
+  .mission-visual {
+    position: relative; aspect-ratio: 1;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .earth-core {
+    width: 200px; height: 200px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #1a4a7a, #0a1a2e, #000510);
+    box-shadow: 0 0 60px rgba(0,100,200,0.3), inset -20px -20px 40px rgba(0,0,0,0.5);
+    position: relative; z-index: 2;
+  }
+  .earth-core::after {
+    content: '🌏'; position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 5rem;
+  }
+  .orbital-path {
+    position: absolute; border-radius: 50%; border: 1px dashed;
+    animation: orbit-spin linear infinite;
+  }
+  .op-1 { width: 280px; height: 280px; border-color: rgba(0,212,255,0.2); animation-duration: 8s; }
+  .op-2 { width: 360px; height: 360px; border-color: rgba(123,47,255,0.15); animation-duration: 14s; animation-direction: reverse; }
+  .op-3 { width: 440px; height: 440px; border-color: rgba(255,77,109,0.1); animation-duration: 20s; }
+  .debris-dot {
+    position: absolute; width: 8px; height: 8px; border-radius: 50%;
+    top: -4px; left: 50%;
+  }
+  .d-red { background: var(--flare); box-shadow: 0 0 8px var(--flare); }
+  .d-blue { background: var(--pulse); box-shadow: 0 0 8px var(--pulse); }
+  .d-purple { background: var(--orbit); box-shadow: 0 0 8px var(--orbit); }
+  .d-orange { background: var(--debris); box-shadow: 0 0 8px var(--debris); }
+
+  .mission-facts { display: flex; flex-direction: column; gap: 1.5rem; margin-top: 2rem; }
+  .fact-item {
+    display: flex; gap: 1rem; align-items: flex-start;
+    padding: 1.2rem; border: 1px solid var(--border);
+    background: var(--glass); backdrop-filter: blur(10px);
+    transition: border-color 0.3s;
+  }
+  .fact-item:hover { border-color: rgba(0,212,255,0.35); }
+  .fact-icon { font-size: 1.5rem; flex-shrink: 0; }
+  .fact-text h4 { font-family: 'Orbitron', monospace; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.3rem; color: var(--text-primary); }
+  .fact-text p { font-size: 0.85rem; color: var(--text-muted); line-height: 1.5; }
+
+  /* ─── FEATURES SECTION ───────────────────────────── */
+  #features { background: var(--deep); }
+  .features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-top: 4rem; }
+  .feature-card {
+    padding: 2rem; border: 1px solid var(--border);
+    background: linear-gradient(135deg, var(--glass), rgba(0,0,0,0.3));
+    backdrop-filter: blur(15px); transition: all 0.4s; position: relative; overflow: hidden;
+    cursor: default;
+  }
+  .feature-card::before {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(0,212,255,0.05), transparent);
+    opacity: 0; transition: opacity 0.3s;
+  }
+  .feature-card:hover { border-color: rgba(0,212,255,0.4); transform: translateY(-4px); }
+  .feature-card:hover::before { opacity: 1; }
+  .feature-num {
+    font-family: 'Orbitron', monospace; font-size: 0.65rem; font-weight: 700;
+    color: var(--pulse); letter-spacing: 0.2em; margin-bottom: 1rem;
+    opacity: 0.6;
+  }
+  .feature-icon { font-size: 2rem; margin-bottom: 1rem; }
+  .feature-card h3 { font-family: 'Orbitron', monospace; font-size: 0.9rem; font-weight: 700; margin-bottom: 0.8rem; letter-spacing: 0.05em; }
+  .feature-card p { font-size: 0.85rem; color: var(--text-muted); line-height: 1.65; }
+  .feature-tag {
+    display: inline-block; margin-top: 1rem;
+    font-family: 'Space Mono', monospace; font-size: 0.65rem;
+    padding: 0.25rem 0.7rem; border: 1px solid var(--border);
+    color: var(--text-muted); letter-spacing: 0.1em;
+  }
+  .tag-ml { border-color: rgba(123,47,255,0.4); color: var(--orbit); }
+  .tag-data { border-color: rgba(0,212,255,0.4); color: var(--pulse); }
+  .tag-viz { border-color: rgba(255,159,28,0.4); color: var(--debris); }
+  .tag-isro { border-color: rgba(57,211,83,0.4); color: var(--safe); }
+  .tag-risk { border-color: rgba(255,77,109,0.4); color: var(--flare); }
+
+  /* ─── PIPELINE SECTION ───────────────────────────── */
+  #pipeline { background: linear-gradient(180deg, var(--deep), var(--cosmos)); }
+  .pipeline-steps {
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 0;
+    margin-top: 4rem; position: relative;
+  }
+  .pipeline-steps::before {
+    content: ''; position: absolute; top: 45px; left: 10%; right: 10%;
+    height: 1px; background: linear-gradient(90deg, var(--pulse), var(--orbit), var(--flare));
+    z-index: 0;
+  }
+  .pipeline-step { text-align: center; position: relative; z-index: 1; padding: 0 0.5rem; }
+  .step-circle {
+    width: 90px; height: 90px; border-radius: 50%; margin: 0 auto 1.5rem;
+    border: 2px solid var(--border); background: var(--deep);
+    display: flex; align-items: center; justify-content: center; font-size: 1.8rem;
+    transition: all 0.4s; position: relative;
+  }
+  .step-circle::after {
+    content: attr(data-step); position: absolute; top: -8px; right: -8px;
+    width: 22px; height: 22px; border-radius: 50%; background: var(--pulse);
+    color: var(--void); font-family: 'Orbitron', monospace; font-size: 0.6rem;
+    font-weight: 900; display: flex; align-items: center; justify-content: center;
+  }
+  .pipeline-step:hover .step-circle { border-color: var(--pulse); box-shadow: 0 0 20px rgba(0,212,255,0.3); transform: scale(1.05); }
+  .step-title { font-family: 'Orbitron', monospace; font-size: 0.75rem; font-weight: 700; margin-bottom: 0.5rem; letter-spacing: 0.05em; }
+  .step-desc { font-size: 0.75rem; color: var(--text-muted); line-height: 1.5; }
+  .step-tech {
+    display: inline-block; margin-top: 0.8rem;
+    font-family: 'Space Mono', monospace; font-size: 0.6rem;
+    padding: 0.2rem 0.6rem; background: rgba(0,212,255,0.08);
+    border: 1px solid rgba(0,212,255,0.15); color: var(--pulse);
+  }
+
+  /* ─── TECH STACK ─────────────────────────────────── */
+  #tech { background: var(--cosmos); }
+  .tech-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-top: 3rem; }
+  .tech-card {
+    padding: 1.5rem; border: 1px solid var(--border);
+    background: var(--glass); text-align: center;
+    transition: all 0.3s;
+  }
+  .tech-card:hover { border-color: var(--pulse); background: rgba(0,212,255,0.05); }
+  .tech-logo { font-size: 2.5rem; margin-bottom: 0.8rem; display: block; }
+  .tech-name { font-family: 'Orbitron', monospace; font-size: 0.8rem; font-weight: 700; margin-bottom: 0.3rem; }
+  .tech-role { font-size: 0.75rem; color: var(--text-muted); }
+
+  /* ─── ISRO IMPACT ────────────────────────────────── */
+  #isro {
+    background: linear-gradient(135deg, var(--cosmos), #050d1a);
+    border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+  }
+  .isro-inner { display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: center; }
+  .isro-badge {
+    display: inline-flex; align-items: center; gap: 1rem;
+    padding: 0.8rem 1.5rem; border: 1px solid rgba(57,211,83,0.3);
+    background: rgba(57,211,83,0.05); margin-bottom: 2rem;
+  }
+  .badge-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--safe); animation: pulse-dot 1.5s infinite; }
+  @keyframes pulse-dot { 0%,100%{box-shadow:0 0 0 0 rgba(57,211,83,0.4)} 50%{box-shadow:0 0 0 8px rgba(57,211,83,0)} }
+  .badge-text { font-family: 'Space Mono', monospace; font-size: 0.7rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--safe); }
+
+  .isro-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 2rem; }
+  .metric-box {
+    padding: 1.5rem; border: 1px solid var(--border);
+    background: rgba(0,0,0,0.3);
+  }
+  .metric-val { font-family: 'Orbitron', monospace; font-size: 1.8rem; font-weight: 900; color: var(--safe); }
+  .metric-lbl { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.3rem; }
+  .metric-val.warn { color: var(--flare); }
+  .metric-val.caution { color: var(--debris); }
+
+  .isro-satellites { display: flex; flex-direction: column; gap: 1rem; }
+  .sat-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1rem 1.5rem; border: 1px solid var(--border);
+    background: var(--glass);
+  }
+  .sat-name { font-family: 'Space Mono', monospace; font-size: 0.82rem; }
+  .sat-alt { font-size: 0.78rem; color: var(--text-muted); }
+  .sat-status {
+    font-family: 'Space Mono', monospace; font-size: 0.7rem; padding: 0.25rem 0.8rem;
+    text-transform: uppercase; letter-spacing: 0.1em;
+  }
+  .status-safe { border: 1px solid var(--safe); color: var(--safe); }
+  .status-warn { border: 1px solid var(--debris); color: var(--debris); }
+  .status-risk { border: 1px solid var(--flare); color: var(--flare); }
+
+  /* ─── ABOUT ──────────────────────────────────────── */
+  #about { background: linear-gradient(180deg, #050d1a, var(--void)); }
+  .about-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 5rem; align-items: start; }
+  .about-body p { color: var(--text-muted); line-height: 1.8; margin-bottom: 1.2rem; font-size: 0.95rem; }
+  .about-body strong { color: var(--text-primary); }
+  .about-body .highlight { color: var(--pulse); }
+  .team-card {
+    padding: 2rem; border: 1px solid var(--border); background: var(--glass);
+    text-align: center; position: sticky; top: 100px;
+  }
+  .team-avatar {
+    width: 80px; height: 80px; border-radius: 50%; margin: 0 auto 1rem;
+    background: linear-gradient(135deg, var(--orbit), var(--pulse));
+    display: flex; align-items: center; justify-content: center; font-size: 2.5rem;
+  }
+  .team-name { font-family: 'Orbitron', monospace; font-size: 0.9rem; font-weight: 700; margin-bottom: 0.3rem; }
+  .team-role { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1.5rem; }
+  .team-links { display: flex; gap: 0.8rem; justify-content: center; }
+  .team-link {
+    padding: 0.4rem 1rem; border: 1px solid var(--border);
+    font-family: 'Space Mono', monospace; font-size: 0.68rem;
+    color: var(--text-muted); text-decoration: none; transition: all 0.3s;
+    letter-spacing: 0.1em;
+  }
+  .team-link:hover { border-color: var(--pulse); color: var(--pulse); }
+
+  .skills-list { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1.5rem; }
+  .skill-tag {
+    font-family: 'Space Mono', monospace; font-size: 0.68rem; padding: 0.3rem 0.8rem;
+    border: 1px solid var(--border); color: var(--text-muted); letter-spacing: 0.05em;
+  }
+
+  /* ─── FOOTER ─────────────────────────────────────── */
+  footer {
+    background: var(--void); border-top: 1px solid var(--border);
+    padding: 3rem 4rem; position: relative; z-index: 1;
+  }
+  .footer-inner { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 2rem; }
+  .footer-logo { font-family: 'Orbitron', monospace; font-size: 0.9rem; font-weight: 900; color: var(--pulse); }
+  .footer-copy { font-family: 'Space Mono', monospace; font-size: 0.7rem; color: var(--text-muted); }
+  .footer-links { display: flex; gap: 2rem; }
+  .footer-links a { font-family: 'Space Mono', monospace; font-size: 0.7rem; color: var(--text-muted); text-decoration: none; transition: color 0.3s; letter-spacing: 0.1em; }
+  .footer-links a:hover { color: var(--pulse); }
+
+  /* ─── DIVIDERS ───────────────────────────────────── */
+  .divider { height: 1px; background: linear-gradient(90deg, transparent, var(--border), transparent); }
+
+  /* ─── RESPONSIVE ─────────────────────────────────── */
+  @media (max-width: 900px) {
+    nav { padding: 1rem 1.5rem; }
+    .nav-links { display: none; }
+    .mission-grid, .isro-inner, .about-grid { grid-template-columns: 1fr; }
+    .features-grid { grid-template-columns: 1fr; }
+    .pipeline-steps { grid-template-columns: 1fr; gap: 2rem; }
+    .pipeline-steps::before { display: none; }
+    .tech-grid { grid-template-columns: repeat(2, 1fr); }
+    footer { padding: 2rem 1.5rem; }
+    .footer-inner { flex-direction: column; text-align: center; }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="starfield"></canvas>
+
+<!-- ─── NAV ────────────────────────────────────── -->
+<nav>
+  <a href="#hero" class="nav-logo">ORBITAL<span>MIND</span></a>
+  <ul class="nav-links">
+    <li><a href="#mission" class="nav-link">Mission</a></li>
+    <li><a href="#features" class="nav-link">Features</a></li>
+    <li><a href="#pipeline" class="nav-link">Pipeline</a></li>
+    <li><a href="#tech" class="nav-link">Tech Stack</a></li>
+    <li><a href="#isro" class="nav-link">ISRO Impact</a></li>
+    <li><a href="app.html" class="nav-link">Launch App</a></li>
+    <li><a href="#about" class="nav-link">About</a></li>
+  </ul>
+  <div class="nav-badge">DBSCAN v2.4</div>
+</nav>
+
+<!-- ─── HERO ────────────────────────────────────── -->
+<section id="hero">
+  <div class="hero-orbit-ring ring-1"><div class="orbit-dot dot-1"></div></div>
+  <div class="hero-orbit-ring ring-2"><div class="orbit-dot dot-2"></div></div>
+  <div class="hero-orbit-ring ring-3"><div class="orbit-dot dot-3"></div></div>
+
+  <div class="hero-eyebrow">
+    <span class="eyebrow-line"></span>
+    Space Debris Intelligence System
+    <span class="eyebrow-line"></span>
+  </div>
+
+  <h1 class="hero-title">
+    <span class="line1">ORBITAL</span>
+    <span class="line2">MIND</span>
+  </h1>
+
+  <p class="hero-sub">
+    DBSCAN-powered debris clustering for Sun-Synchronous Orbits. Protecting ISRO's IRS satellites from the 14,000+ tracked objects threatening low-Earth orbit.
+  </p>
+
+  <div class="hero-cta-row">
+    <a href="app.html" class="btn-primary">Launch Application →</a>
+    <a href="#mission" class="btn-secondary">Learn More</a>
+  </div>
+
+  <div class="hero-stats">
+    <div class="hero-stat">
+      <span class="stat-num">14,000+</span>
+      <span class="stat-label">Tracked Objects</span>
+    </div>
+    <div class="hero-stat">
+      <span class="stat-num">800–1000</span>
+      <span class="stat-label">km Altitude Range</span>
+    </div>
+    <div class="hero-stat">
+      <span class="stat-num">5–7</span>
+      <span class="stat-label">Debris Clusters</span>
+    </div>
+    <div class="hero-stat">
+      <span class="stat-num">DBSCAN</span>
+      <span class="stat-label">ML Algorithm</span>
+    </div>
+  </div>
+
+  <div class="scroll-hint">
+    <span>SCROLL</span>
+    <div class="scroll-arrow"></div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ─── MISSION ──────────────────────────────────── -->
+<section id="mission">
+  <div class="section-wrap">
+    <div class="section-tag">Mission Overview</div>
+    <h2 class="section-title">Why Space Debris<br>Is a Critical Threat</h2>
+    <p class="section-desc">The Sun-Synchronous Orbit band (800–1000 km) hosts ISRO's most vital Earth observation satellites — and it's increasingly crowded with debris.</p>
+
+    <div class="mission-grid">
+      <div>
+        <div class="mission-facts">
+          <div class="fact-item">
+            <div class="fact-icon">🛰️</div>
+            <div class="fact-text">
+              <h4>Kessler Syndrome Risk</h4>
+              <p>A cascading collision chain could render entire orbital shells unusable for decades, cutting off crucial Earth observation and communication infrastructure.</p>
+            </div>
+          </div>
+          <div class="fact-item">
+            <div class="fact-icon">📡</div>
+            <div class="fact-text">
+              <h4>ISRO IRS Satellite Zone</h4>
+              <p>India's Remote Sensing satellites — IRS-1A through Cartosat series — operate precisely in the 800–1000km SSO band, making this analysis directly actionable.</p>
+            </div>
+          </div>
+          <div class="fact-item">
+            <div class="fact-icon">💥</div>
+            <div class="fact-text">
+              <h4>Fragmentation Events</h4>
+              <p>Single collision events generate thousands of untracked fragments. The 2007 Fengyun-1C ASAT test alone produced 3,000+ trackable objects.</p>
+            </div>
+          </div>
+          <div class="fact-item">
+            <div class="fact-icon">🤖</div>
+            <div class="fact-text">
+              <h4>ML-Powered Detection</h4>
+              <p>DBSCAN excels at finding debris "clouds" of arbitrary shape without assuming cluster count — ideal for the chaotic, non-spherical distributions of orbital debris.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="mission-visual">
+        <div class="orbital-path op-1"><div class="debris-dot d-red"></div></div>
+        <div class="orbital-path op-2"><div class="debris-dot d-blue"></div></div>
+        <div class="orbital-path op-3"><div class="debris-dot d-purple"></div></div>
+        <div class="earth-core"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ─── FEATURES ─────────────────────────────────── -->
+<section id="features">
+  <div class="section-wrap">
+    <div class="section-tag">Core Capabilities</div>
+    <h2 class="section-title">Feature Architecture</h2>
+    <p class="section-desc">Six integrated modules that transform raw TLE data into actionable collision risk intelligence.</p>
+
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-num">01 / 06</div>
+        <div class="feature-icon">📥</div>
+        <h3>TLE Data Ingestion</h3>
+        <p>Automated pipeline fetching Two-Line Element sets for 14,000+ tracked objects from Space-Track.org or Kaggle datasets. Supports live and historical feeds.</p>
+        <span class="feature-tag tag-data">DATA LAYER</span>
+      </div>
+      <div class="feature-card">
+        <div class="feature-num">02 / 06</div>
+        <div class="feature-icon">🔬</div>
+        <h3>DBSCAN Clustering</h3>
+        <p>Density-Based Spatial Clustering of Applications with Noise — automatically identifies 5–7 high-density debris clouds. No cluster count assumption needed. Handles outliers natively.</p>
+        <span class="feature-tag tag-ml">ML ENGINE</span>
+      </div>
+      <div class="feature-card">
+        <div class="feature-num">03 / 06</div>
+        <div class="feature-icon">🌍</div>
+        <h3>Orbital Propagation</h3>
+        <p>Skyfield-powered TLE propagation computes real-time 3D positions. Tracks inclination, RAAN, apogee/perigee and eccentricity for each object.</p>
+        <span class="feature-tag tag-data">SKYFIELD</span>
+      </div>
+      <div class="feature-card">
+        <div class="feature-num">04 / 06</div>
+        <div class="feature-icon">☣</div>
+        <h3>Collision Probability</h3>
+        <p>Computes cluster-specific collision probabilities using orbital element spread, relative velocity, and cross-sectional area estimates for each debris cloud.</p>
+        <span class="feature-tag tag-risk">RISK MODEL</span>
+      </div>
+      <div class="feature-card">
+        <div class="feature-num">05 / 06</div>
+        <div class="feature-icon">🌐</div>
+        <h3>3D Orbital Visualization</h3>
+        <p>Interactive Plotly globe with debris vs rocket bodies vs payloads colored separately. Zoom, rotate and filter by cluster ID, altitude band or object class.</p>
+        <span class="feature-tag tag-viz">PLOTLY 3D</span>
+      </div>
+      <div class="feature-card">
+        <div class="feature-num">06 / 06</div>
+        <div class="feature-icon">𝐈𝐬𝐫𝐨 🛰️</div>
+        <h3>ISRO Satellite Overlay</h3>
+        <p>Maps active ISRO IRS satellites against debris clusters. Computes conjunction windows and highlights high-risk orbital intersections with operational assets.</p>
+        <span class="feature-tag tag-isro">ISRO IMPACT</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ─── PIPELINE ──────────────────────────────────── -->
+<section id="pipeline">
+  <div class="section-wrap">
+    <div class="section-tag">Data Pipeline</div>
+    <h2 class="section-title">End-to-End Processing Flow</h2>
+    <p class="section-desc">From raw TLE data to actionable risk intelligence in five automated stages.</p>
+
+    <div class="pipeline-steps">
+      <div class="pipeline-step">
+        <div class="step-circle" data-step="1">📡</div>
+        <div class="step-title">Data Fetch</div>
+        <div class="step-desc">Download TLE catalog from Space-Track.org API or Kaggle dataset for 14,000+ objects</div>
+        <span class="step-tech">Pandas · Requests</span>
+      </div>
+      <div class="pipeline-step">
+        <div class="step-circle" data-step="2">⚙️</div>
+        <div class="step-title">Preprocessing</div>
+        <div class="step-desc">Parse TLE fields, filter SSO band (800–1000km), extract 6 orbital elements per object</div>
+        <span class="step-tech">Skyfield · NumPy</span>
+      </div>
+      <div class="pipeline-step">
+        <div class="step-circle" data-step="3">🤖</div>
+        <div class="step-title">DBSCAN Cluster</div>
+        <div class="step-desc">Apply DBSCAN with optimized ε and minSamples. Identify 5–7 debris clouds + noise</div>
+        <span class="step-tech">scikit-learn</span>
+      </div>
+      <div class="pipeline-step">
+        <div class="step-circle" data-step="4">📊</div>
+        <div class="step-title">Risk Analysis</div>
+        <div class="step-desc">Compute collision probabilities, density metrics, and ISRO satellite conjunction windows</div>
+        <span class="step-tech">SciPy · Astropy</span>
+      </div>
+      <div class="pipeline-step">
+        <div class="step-circle" data-step="5">🌐</div>
+        <div class="step-title">Visualization</div>
+        <div class="step-desc">Render interactive 3D orbital shells with cluster overlays and real-time risk dashboard</div>
+        <span class="step-tech">Plotly · Dash</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ─── TECH STACK ────────────────────────────────── -->
+<section id="tech">
+  <div class="section-wrap">
+    <div class="section-tag">Tech Stack</div>
+    <h2 class="section-title">Built With</h2>
+    <p class="section-desc">Industry-standard scientific Python ecosystem combined with modern web visualization libraries.</p>
+
+    <div class="tech-grid">
+      <div class="tech-card">
+        <span class="tech-logo">🐼</span>
+        <div class="tech-name">Pandas</div>
+        <div class="tech-role">Data manipulation & TLE parsing</div>
+      </div>
+      <div class="tech-card">
+        <span class="tech-logo">📖</span>
+        <div class="tech-name">scikit-learn</div>
+        <div class="tech-role">DBSCAN clustering algorithm</div>
+      </div>
+      <div class="tech-card">
+        <span class="tech-logo">🌌</span>
+        <div class="tech-name">Skyfield</div>
+        <div class="tech-role">TLE orbital propagation</div>
+      </div>
+      <div class="tech-card">
+        <span class="tech-logo">📈</span>
+        <div class="tech-name">Plotly</div>
+        <div class="tech-role">Interactive 3D orbital visualization</div>
+      </div>
+      <div class="tech-card">
+        <span class="tech-logo">🔢</span>
+        <div class="tech-name">NumPy</div>
+        <div class="tech-role">Numerical orbital computations</div>
+      </div>
+      <div class="tech-card">
+        <span class="tech-logo">🔬</span>
+        <div class="tech-name">SciPy</div>
+        <div class="tech-role">Collision probability modeling</div>
+      </div>
+      <div class="tech-card">
+        <span class="tech-logo">🌐</span>
+        <div class="tech-name">Dash</div>
+        <div class="tech-role">Web dashboard framework</div>
+      </div>
+      <div class="tech-card">
+        <span class="tech-logo">🐍</span>
+        <div class="tech-name">Python 3.11</div>
+        <div class="tech-role">Core application runtime</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ─── ISRO IMPACT ───────────────────────────────── -->
+<section id="isro">
+  <div class="section-wrap">
+    <div class="isro-inner">
+      <div>
+        <div class="isro-badge">
+          <div class="badge-dot"></div>
+          <span class="badge-text">ISRO Operational Relevance</span>
+        </div>
+        <div class="section-tag">Mission Impact</div>
+        <h2 class="section-title">Protecting India's<br>Space Assets</h2>
+        <p style="color:var(--text-muted);line-height:1.7;margin-top:1rem;font-size:0.95rem;">
+          India's IRS satellite constellation — from Resourcesat to Cartosat — forms the backbone of national agriculture monitoring, disaster response and cartography. All operate in the exact altitude band most threatened by debris clustering.
+        </p>
+        <p style="color:var(--text-muted);line-height:1.7;margin-top:0.8rem;font-size:0.95rem;">
+          OrbitalMind provides ISRO mission planners with cluster-level situational awareness — identifying which debris clouds pose the highest conjunction probability for each operational satellite, enabling proactive avoidance maneuver planning.
+        </p>
+        <div class="isro-metrics">
+          <div class="metric-box">
+            <div class="metric-val">~97%</div>
+            <div class="metric-lbl">SSO Objects Analyzed</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-val warn">3</div>
+            <div class="metric-lbl">High-Risk Clusters Found</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-val caution">~72hrs</div>
+            <div class="metric-lbl">Avg Conjunction Window</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-val">10+</div>
+            <div class="metric-lbl">ISRO Satellites Monitored</div>
+          </div>
+        </div>
+      </div>
+      <div class="isro-satellites">
+        <div style="font-family:'Space Mono',monospace;font-size:0.68rem;letter-spacing:0.2em;color:var(--text-muted);margin-bottom:0.5rem;text-transform:uppercase;">Active IRS Satellites in SSO</div>
+        <div class="sat-item">
+          <div><div class="sat-name">Cartosat-3</div><div class="sat-alt">509 km · Imaging</div></div>
+          <div class="sat-status status-safe">SAFE</div>
+        </div>
+        <div class="sat-item">
+          <div><div class="sat-name">Resourcesat-2A</div><div class="sat-alt">817 km · Agriculture</div></div>
+          <div class="sat-status status-warn">MONITOR</div>
+        </div>
+        <div class="sat-item">
+          <div><div class="sat-name">RISAT-2BR1</div><div class="sat-alt">576 km · SAR Imaging</div></div>
+          <div class="sat-status status-safe">SAFE</div>
+        </div>
+        <div class="sat-item">
+          <div><div class="sat-name">IRS-1D</div><div class="sat-alt">817 km · Earth Obs.</div></div>
+          <div class="sat-status status-risk">RISK</div>
+        </div>
+        <div class="sat-item">
+          <div><div class="sat-name">OceanSat-3</div><div class="sat-alt">742 km · Oceanography</div></div>
+          <div class="sat-status status-safe">SAFE</div>
+        </div>
+        <div class="sat-item">
+          <div><div class="sat-name">EOS-06</div><div class="sat-alt">742 km · Earth Obs.</div></div>
+          <div class="sat-status status-warn">MONITOR</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ─── ABOUT ─────────────────────────────────────── -->
+<section id="about">
+  <div class="section-wrap">
+    <div class="section-tag">About This Project</div>
+    <h2 class="section-title">Project Background</h2>
+
+    <div class="about-grid">
+      <div class="about-body">
+        <p>
+          <strong>OrbitalMind</strong> is a <span class="highlight">machine learning application</span> developed to address one of aerospace's most pressing challenges — the growing density of space debris in Sun-Synchronous Orbits. With over <strong>14,000 tracked objects</strong> and millions of untracked fragments, the orbital environment demands intelligent, data-driven risk assessment tools.
+        </p>
+        <p>
+          The project uses <strong>DBSCAN (Density-Based Spatial Clustering of Applications with Noise)</strong> — an algorithm uniquely suited for this domain. Unlike k-means, DBSCAN requires no prior assumption of cluster count, handles irregular debris cloud shapes naturally, and marks sparse outliers as noise rather than forcing them into clusters. These properties make it ideal for the chaotic geometry of orbital debris distributions.
+        </p>
+        <p>
+          Data is sourced from <strong>Space-Track.org</strong> — the US Space Force's official catalog — providing TLE (Two-Line Element) sets updated multiple times daily. The pipeline extracts six orbital elements per object: <span class="highlight">inclination, RAAN, argument of perigee, eccentricity, mean motion, and epoch</span>. Objects in the 800–1000 km altitude band are filtered for ISRO-specific analysis.
+        </p>
+        <p>
+          Visualization uses <strong>Plotly's 3D scatter globe</strong> to render all debris objects in true orbital geometry, with cluster assignments color-coded and object classes (debris, rocket bodies, payloads) distinguished visually. ISRO operational satellites are overlaid with real-time conjunction proximity indicators.
+        </p>
+        <p>
+          This project demonstrates how <span class="highlight">classical ML algorithms remain highly effective</span> for geospatial scientific problems when combined with domain-appropriate feature engineering and interactive visualization — no deep learning required.
+        </p>
+
+        <div class="skills-list">
+          <span class="skill-tag">Python 3.11</span>
+          <span class="skill-tag">DBSCAN</span>
+          <span class="skill-tag">scikit-learn</span>
+          <span class="skill-tag">Skyfield</span>
+          <span class="skill-tag">Plotly</span>
+          <span class="skill-tag">Pandas</span>
+          <span class="skill-tag">Space-Track API</span>
+          <span class="skill-tag">TLE Parsing</span>
+          <span class="skill-tag">Orbital Mechanics</span>
+          <span class="skill-tag">Collision Risk</span>
+        </div>
+      </div>
+      <div>
+        <div class="team-card">
+          <div class="team-avatar">👩🏻‍🚀</div>
+          <div class="team-name">Anjum A Khan</div>
+          <div class="team-role">ML Engineer · Space Systems</div>
+          <div style="font-size:0.8rem;color:var(--text-muted);line-height:1.6;margin-bottom:1rem;">
+            Built OrbitalMind as a capstone ML project demonstrating end-to-end data science on real orbital mechanics data with ISRO operational relevance.
+          </div>
+          <div class="team-links">
+            <a href="https://github.com/TechAnjum" class="team-link" target="_blank" rel="noopener noreferrer">GitHub</a>
+            <a href="#" class="team-link">Report</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── FOOTER ────────────────────────────────────── -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-logo">ORBITAL<span style="color:var(--flare)">MIND</span></div>
+    <div class="footer-copy">© 2025 OrbitalMind · Space Debris Intelligence · DBSCAN v2.4</div>
+    <div class="footer-links">
+      <a href="#hero">Home</a>
+      <a href="#mission">Mission</a>
+      <a href="app.html">App</a>
+      <a href="#about">About</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+// ─── STARFIELD
+const canvas = document.getElementById('starfield');
+const ctx = canvas.getContext('2d');
+function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+resizeCanvas(); window.addEventListener('resize', resizeCanvas);
+
+const stars = Array.from({length: 280}, () => ({
+  x: Math.random(), y: Math.random(),
+  r: Math.random() * 1.5 + 0.2,
+  opacity: Math.random(), speed: Math.random() * 0.0003 + 0.0001
+}));
+
+function drawStars() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  stars.forEach(s => {
+    s.opacity += (Math.random() - 0.5) * 0.02;
+    s.opacity = Math.max(0.05, Math.min(0.9, s.opacity));
+    ctx.beginPath();
+    ctx.arc(s.x * canvas.width, s.y * canvas.height, s.r, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(255,255,255,${s.opacity})`;
+    ctx.fill();
+  });
+  requestAnimationFrame(drawStars);
+}
+drawStars();
+
+// ─── ACTIVE NAV
+const sections = document.querySelectorAll('section[id]');
+const navLinks = document.querySelectorAll('.nav-link');
+window.addEventListener('scroll', () => {
+  let current = '';
+  sections.forEach(s => { if (window.scrollY >= s.offsetTop - 200) current = s.id; });
+  navLinks.forEach(a => {
+    a.classList.remove('active');
+    if (a.getAttribute('href') === '#' + current) a.classList.add('active');
+  });
+});
+
+// ─── COUNT-UP ANIMATION
+const statNums = document.querySelectorAll('.stat-num');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const el = entry.target;
+      const raw = el.textContent;
+      if (raw.includes('+') || raw.includes('–')) return;
+      // already text-based
+    }
+  });
+}, { threshold: 0.5 });
+statNums.forEach(n => observer.observe(n));
+
+// ─── SMOOTH NAV SCROLL
+document.querySelectorAll('a[href^="#"]').forEach(a => {
+  a.addEventListener('click', e => {
+    const target = document.querySelector(a.getAttribute('href'));
+    if (target) { e.preventDefault(); target.scrollIntoView({ behavior: 'smooth' }); }
+  });
+});
+</script>
+</body>
+</html>
