@@ -196,9 +196,6 @@ Possible enhancements for this project include:
 
 **Anjum Khan**
 
-Final Year B.Tech
-Artificial Intelligence & Machine Learning
-
 Interests:
 AI • Data Science • Space Technology • Data Visualization
 
